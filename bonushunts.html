@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Marko Bonus Hunt Overlay</title>
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap');
+
+  :root{
+    --bg-main:#050914;
+    --card-bg:#101521;
+    --border-color:#262c3f;
+    --accent:#8c5bff;
+    --accent-strong:#ff00ff;
+    --text-soft:#a7b3d1;
+    --text-strong:#ffffff;
+  }
+
+  *{box-sizing:border-box;}
+
+  html,body{
+    margin:0;height:100%;background:var(--bg-main);
+    font-family:Orbitron,system-ui,sans-serif;color:var(--text-strong);
+  }
+
+  .layout{
+    display:flex;gap:20px;padding:16px;margin:0 auto;
+    max-width:1220px;justify-content:center;
+  }
+
+  /* LEFT OVERLAY */
+  .overlay-card{
+    flex:0 0 600px;max-width:600px;
+    display:flex;flex-direction:column;gap:14px;
+  }
+
+  .card{
+    background:var(--card-bg);border-radius:16px;
+    border:1px solid var(--border-color);
+    padding:14px 16px;box-shadow:0 0 18px rgba(140,91,255,0.38);
+  }
+
+  .card-title-row{
+    position:relative;display:flex;justify-content:space-between;align-items:center;
+  }
+
+  .card-title{font-size:18px;font-weight:700;}
+  .card-subtitle{font-size:11px;color:var(--text-soft);letter-spacing:1px;text-transform:uppercase;}
+
+  .tag-pill{
+    font-size:11px;padding:4px 8px;border-radius:999px;
+    border:1px solid var(--border-color);color:var(--text-soft);
+  }
+
+  /* Logo between title and total bonuses */
+  .header-logo{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:185px;pointer-events:none;animation:logoGlow 2.5s infinite alternate;
+  }
+
+  @keyframes logoGlow{
+    0%{filter:drop-shadow(0 0 3px #640064);}
+    50%{filter:drop-shadow(0 0 10px #640064);}
+    100%{filter:drop-shadow(0 0 4px #640064);}
+  }
+
+  /* Progress bar (simple) */
+  .progress-wrap{margin:6px 0 10px;}
+  .progress-bar{
+    width:100%;height:8px;border-radius:999px;
+    background:#1a2234;overflow:hidden;
+  }
+  .progress-inner{
+    height:100%;width:0%;
+    background:linear-gradient(90deg,#8c5bff,#ff00ff);
+    transition:width 0.4s ease;
+  }
+
+  /* SUMMARY */
+  .summary-grid{display:flex;flex-direction:column;gap:6px;margin-top:4px;}
+  .summary-row{display:flex;gap:10px;}
+  .summary-item{flex:1;min-width:0;}
+  .summary-label{font-size:11px;color:var(--text-soft);}
+  .summary-value{font-size:13px;font-weight:600;}
+
+  /* TABLE */
+  .table-header{
+    display:grid;grid-template-columns:40px 1.8fr 0.9fr 0.9fr;
+    font-size:11px;color:var(--text-soft);padding:4px 8px;
+  }
+
+  .table-body{margin-top:4px;}
+
+  .table-row{
+    display:grid;grid-template-columns:40px 1.8fr 0.9fr 0.9fr;
+    padding:6px 8px;margin-bottom:4px;border-radius:10px;
+    background:#12182a;border:1px solid rgba(255,255,255,0.04);
+    font-size:13px;box-shadow:0 0 10px rgba(140,91,255,0.25);
+  }
+
+  .table-row.highlight-win{
+    border-color:var(--accent-strong);
+    box-shadow:0 0 16px rgba(255,0,255,0.45);
+  }
+
+  .table-scroll{
+    height:220px;overflow:hidden;position:relative;
+  }
+
+  .fade-top,.fade-bottom{
+    position:absolute;left:0;right:0;height:28px;pointer-events:none;z-index:5;
+  }
+  .fade-top{top:0;background:linear-gradient(to bottom, var(--bg-main), transparent);}
+  .fade-bottom{bottom:0;background:linear-gradient(to top, var(--bg-main), transparent);}
+
+  /* CONTROL PANEL */
+  .control-panel{
+    flex:0 0 600px;max-width:600px;
+    background:#050814;border-radius:16px;border:1px solid #262c3f;
+    padding:12px 14px;box-shadow:0 0 18px rgba(140,91,255,0.38);
+  }
+
+  .cp-title{font-size:16px;margin:0 0 6px;}
+  .cp-sub{font-size:11px;color:var(--text-soft);margin-bottom:10px;}
+  .cp-section{margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #181d2a;}
+  .cp-label{font-size:11px;color:var(--text-soft);margin-bottom:3px;display:block;}
+
+  .cp-input{
+    width:100%;padding:6px 8px;border-radius:8px;border:none;
+    background:#131a2c;color:#fff;font-size:12px;margin-bottom:6px;
+  }
+  .cp-input:focus{outline:none;box-shadow:0 0 0 1px var(--accent);}
+
+  .cp-btn{
+    width:100%;padding:7px 10px;border-radius:8px;border:none;
+    background:var(--accent);color:#000;font-weight:700;font-size:12px;
+    cursor:pointer;transition:0.2s;
+  }
+  .cp-btn:hover{filter:brightness(1.05);box-shadow:0 0 12px rgba(140,91,255,0.7);transform:translateY(-1px);}
+
+  .cp-win-row{
+    display:flex;align-items:center;gap:6px;margin-bottom:5px;
+  }
+  .cp-win-row span{
+    font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  }
+  .cp-win-input{
+    width:80px;padding:5px 6px;border-radius:6px;border:none;
+    background:#131a2c;color:#fff;font-size:11px;
+  }
+  .cp-win-btn{
+    padding:5px 7px;border-radius:6px;border:none;
+    background:var(--accent-strong);color:#000;font-size:11px;font-weight:700;
+    cursor:pointer;transition:0.2s;
+  }
+  .cp-win-btn:hover{box-shadow:0 0 10px rgba(255,0,255,0.7);transform:translateY(-1px);}
+
+</style>
+</head>
+<script>
+setInterval(() => {
+    fetch(window.location.href)
+    .then(() => location.reload());
+}, 2000); // refresh every 2 seconds
+</script>
+
+<body>
+
+<div class="layout">
+
+  <!-- LEFT OVERLAY -->
+  <div class="overlay-card">
+
+    <!-- SUMMARY CARD -->
+    <div class="card">
+      <div class="card-title-row">
+        <div>
+          <div class="card-title">Bonus Hunt</div>
+          <div class="card-subtitle">Live Session Overview</div>
+        </div>
+        <img src="markologo.png" class="header-logo" alt="Logo">
+        <div class="tag-pill">Total Bonuses: <span id="sumTotalBonuses">0</span></div>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-bar">
+          <div class="progress-inner" id="progressInner"></div>
+        </div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="summary-row">
+          <div class="summary-item">
+            <div class="summary-label">Start</div>
+            <div id="sumStart" class="summary-value">$0.00</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Winnings</div>
+            <div id="sumWinnings" class="summary-value">$0.00</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Best Win</div>
+            <div id="sumBestWin" class="summary-value">$0.00</div>
+          </div>
+        </div>
+        <div class="summary-row">
+          <div class="summary-item">
+            <div class="summary-label">Run Average</div>
+            <div id="sumRunAvg" class="summary-value">-</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Required X</div>
+            <div id="sumReqAvg" class="summary-value">-</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Best X Win</div>
+            <div id="sumBestX" class="summary-value">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BONUS LIST CARD -->
+    <div class="card">
+      <div class="card-title-row">
+        <div>
+          <div class="card-title">Bonus Hunt</div>
+          <div class="card-subtitle">Bonuses Collected</div>
+        </div>
+      </div>
+
+      <div class="table-header">
+        <span>#</span>
+        <span>Game</span>
+        <span>Bet Size</span>
+        <span>Payout</span>
+      </div>
+
+      <div class="table-scroll">
+        <div class="fade-top"></div>
+        <div class="fade-bottom"></div>
+
+        <div id="tableScrollInner" style="position:absolute;left:0;right:0;top:0;">
+          <div id="bonusTableBody" class="table-body"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTROL PANEL -->
+  <div class="control-panel">
+    <h2 class="cp-title">Bonus Hunt Control</h2>
+    <div class="cp-sub">Use this in your browser. Crop stream to only show the left panel.</div>
+
+    <div class="cp-section">
+      <label class="cp-label" for="cpGame">Game Name</label>
+      <input id="cpGame" class="cp-input" placeholder="e.g. Biker Bucks">
+
+      <label class="cp-label" for="cpBet">Bet Size</label>
+      <input id="cpBet" class="cp-input" placeholder="e.g. $5.00">
+
+      <button id="cpAddBonus" class="cp-btn">Add Bonus</button>
+    </div>
+
+    <div class="cp-section">
+      <label class="cp-label" for="cpStartBalance">Start Balance</label>
+      <input id="cpStartBalance" class="cp-input" placeholder="e.g. 3000">
+    </div>
+
+    <div class="cp-section">
+      <label class="cp-label">Add / Edit Wins</label>
+      <div id="cpWinsList"></div>
+    </div>
+
+    <div class="cp-section">
+      <button id="cpClear" class="cp-btn">Clear All</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const STORAGE_KEY = "bonus_hunt_layout_v3";
+
+let entries = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+}
+function sanitizeNumber(s){
+  return parseFloat(String(s).replace(/[^\d.-]/g,''));
+}
+
+// CONTROL PANEL ELEMENTS
+const cpGame = $("cpGame");
+const cpBet = $("cpBet");
+const cpStart = $("cpStartBalance");
+const cpAddBonus = $("cpAddBonus");
+const cpWinsList = $("cpWinsList");
+const cpClear = $("cpClear");
+
+// SUMMARY ELEMENTS
+const sumStart = $("sumStart");
+const sumWinnings = $("sumWinnings");
+const sumBestWin = $("sumBestWin");
+const sumBestX = $("sumBestX");
+const sumRunAvg = $("sumRunAvg");
+const sumReqAvg = $("sumReqAvg");
+const sumTotalBonuses = $("sumTotalBonuses");
+const progressInner = $("progressInner");
+
+// TABLE ELEMENTS
+const tableBody = $("bonusTableBody");
+const tableScrollInner = $("tableScrollInner");
+
+// keep scroll RAF id so we can cancel on redraw
+let scrollRafId = null;
+
+// =========================================================
+// RECOMPUTE & UPDATE SUMMARY VALUES
+// =========================================================
+function recompute(){
+  const startBalance = sanitizeNumber(cpStart.value);
+  const bets = entries.map(e => e.betNum || 0).filter(n => n > 0);
+  const wins = entries.map(e => e.winNum || 0).filter(n => n > 0);
+
+  const totalWin = wins.reduce((a,b)=>a+b,0);
+  const bestWin = wins.length ? Math.max(...wins) : 0;
+
+  const xVals = entries
+    .filter(e => e.winNum > 0 && e.betNum > 0)
+    .map(e => e.winNum / e.betNum);
+
+  const avgX = xVals.length ? xVals.reduce((a,b)=>a+b,0) / xVals.length : null;
+  const bestX = xVals.length ? Math.max(...xVals) : null;
+
+  const totalBetSize = bets.reduce((a,b)=>a+b,0);
+
+  // Required X based on start balance, total bet size and current winnings
+  let reqAvg = null;
+  if (!isNaN(startBalance) && totalBetSize > 0){
+    const remaining = startBalance - totalWin;
+    reqAvg = remaining <= 0 ? 0 : remaining / totalBetSize;
+  }
+
+  sumStart.textContent = isNaN(startBalance) ? "$0.00" : `$${startBalance.toFixed(2)}`;
+  sumWinnings.textContent = `$${totalWin.toFixed(2)}`;
+  sumBestWin.textContent = `$${bestWin.toFixed(2)}`;
+  sumBestX.textContent = bestX != null ? bestX.toFixed(2) + "x" : "-";
+  sumRunAvg.textContent = avgX != null ? avgX.toFixed(2) + "x" : "-";
+  sumReqAvg.textContent = reqAvg != null ? reqAvg.toFixed(2) + "x" : "-";
+  sumTotalBonuses.textContent = entries.length;
+
+  // Progress bar
+  if (avgX != null && reqAvg != null){
+    const pct = reqAvg === 0 ? 100 : Math.min((avgX / reqAvg) * 50, 100);
+    progressInner.style.width = pct + "%";
+  } else {
+    progressInner.style.width = "0%";
+  }
+
+  drawTable();
+  drawWinsPanel();
+}
+
+// =========================================================
+// SMOOTH INFINITE SCROLL LIST
+// =========================================================
+function drawTable(){
+  // stop any previous scroll animation
+  if (scrollRafId !== null){
+    cancelAnimationFrame(scrollRafId);
+    scrollRafId = null;
+  }
+
+  tableBody.innerHTML = "";
+
+  entries.forEach((entry, i) => {
+    const row = document.createElement("div");
+    row.className = "table-row";
+    if(entry.winNum > 0) row.classList.add("highlight-win");
+
+    row.innerHTML = `
+      <span>#${i+1}</span>
+      <span>${entry.game}</span>
+      <span>${entry.betDisplay}</span>
+      <span>${entry.winDisplay || "-"}</span>
+    `;
+    tableBody.appendChild(row);
+  });
+
+  if (entries.length <= 7){
+    // no auto-scroll, just static list
+    tableScrollInner.innerHTML = "";
+    tableScrollInner.appendChild(tableBody);
+    tableScrollInner.style.top = "0px";
+    return;
+  }
+
+  // auto-scroll: original + clone
+  const original = tableBody;
+  const clone = tableBody.cloneNode(true);
+  clone.removeAttribute("id"); // avoid duplicate IDs
+
+  tableScrollInner.innerHTML = "";
+  tableScrollInner.appendChild(original);
+  tableScrollInner.appendChild(clone);
+
+  let pos = 0;
+  const rowHeight = original.firstElementChild.getBoundingClientRect().height + 4;
+  const totalHeight = rowHeight * original.children.length;
+  let last = performance.now();
+  const speed = 18; // px per second
+
+  function animate(ts){
+    const dt = (ts - last) / 1000;
+    last = ts;
+    pos -= speed * dt;
+    if (Math.abs(pos) >= totalHeight) pos = 0;
+    tableScrollInner.style.top = pos + "px";
+    scrollRafId = requestAnimationFrame(animate);
+  }
+
+  scrollRafId = requestAnimationFrame(animate);
+}
+
+// =========================================================
+// CONTROL PANEL: EDIT WINS
+// =========================================================
+function drawWinsPanel(){
+  cpWinsList.innerHTML = "";
+
+  if (!entries.length){
+    cpWinsList.innerHTML = "<div style='font-size:11px;color:#76809c;'>No bonuses added yet.</div>";
+    return;
+  }
+
+  entries.forEach((entry, i) => {
+    const row = document.createElement("div");
+    row.className = "cp-win-row";
+
+    row.innerHTML = `
+      <span>${entry.game} (${entry.betDisplay})</span>
+      <input class="cp-win-input" id="winInput_${i}" value="${entry.winNum ?? ""}">
+      <button class="cp-win-btn" id="winBtn_${i}">Save</button>
+    `;
+
+    row.querySelector(`#winBtn_${i}`).onclick = () => {
+      const val = sanitizeNumber(row.querySelector(`#winInput_${i}`).value);
+      if (isNaN(val)) return alert("Invalid win amount");
+
+      entry.winNum = val;
+      entry.winDisplay = "$" + val.toFixed(2);
+      save();
+      recompute();
+    };
+
+    cpWinsList.appendChild(row);
+  });
+}
+
+// =========================================================
+// ADD BONUS
+// =========================================================
+cpAddBonus.onclick = () => {
+  const game = cpGame.value.trim() || "Unknown";
+  const rawBet = cpBet.value.trim();
+  if (!rawBet) return alert("Enter bet size");
+
+  const betNum = sanitizeNumber(rawBet);
+  if (isNaN(betNum)) return alert("Invalid bet size");
+
+  const betDisp = rawBet.includes("$") ? rawBet : "$" + betNum.toFixed(2);
+
+  entries.push({
+    game,
+    betNum,
+    betDisplay: betDisp,
+    winNum: null,
+    winDisplay: null
+  });
+
+  cpGame.value = "";
+  cpBet.value = "";
+  save();
+  recompute();
+};
+
+// =========================================================
+// START BALANCE INPUT
+// =========================================================
+cpStart.onkeydown = e => {
+  if (e.key === "Enter"){
+    const val = sanitizeNumber(cpStart.value);
+    if (isNaN(val)) return alert("Invalid start balance");
+    cpStart.value = val.toFixed(2);
+    recompute();
+  }
+};
+cpStart.oninput = recompute;
+
+// =========================================================
+// CLEAR EVERYTHING
+// =========================================================
+cpClear.onclick = () => {
+  if (!confirm("Reset everything?")) return;
+
+  entries = [];
+  cpStart.value = "";
+  localStorage.removeItem(STORAGE_KEY);
+  recompute();
+};
+
+// INIT
+recompute();
+</script>
+
+</body>
+</html>
+
+
+
+
+
